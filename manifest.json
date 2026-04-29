@@ -1,0 +1,22 @@
+{
+  "name": "Pino's Operations",
+  "short_name": "Pino's Ops",
+  "description": "Inventory & Operations Management for Pino's Pizza Gourmet",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#faf8f5",
+  "theme_color": "#1a1a1a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
