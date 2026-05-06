@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pino's Ops">
+<meta name="theme-color" content="#1a1a1a">
+<title>Pino's Inventory</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#faf8f5;--bg-card:#fff;--bg-hover:#f5f2ee;--text:#1a1a1a;--text-secondary:#6b6560;--text-muted:#9e9893;--border:#e8e4df;--accent:#c4501a;--accent-light:#fff3ed;--green:#2d8a4e;--green-bg:#edf7f0;--yellow:#c49000;--yellow-bg:#fef9eb;--red:#c4301a;--red-bg:#fdf0ed;--gray:#8a8a8a;--gray-bg:#f0f0f0;--shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);--shadow-lg:0 4px 12px rgba(0,0,0,.08);--radius:12px;--radius-sm:8px;--font:'DM Sans',-apple-system,sans-serif;--font-display:'DM Serif Display',Georgia,serif;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
+[data-theme="dark"]{--bg:#111110;--bg-card:#1c1c1a;--bg-hover:#252523;--text:#ede9e3;--text-secondary:#a09a93;--text-muted:#6b6560;--border:#2e2d2a;--accent:#e8733d;--accent-light:#2a1a10;--green-bg:#0f1f14;--yellow-bg:#1f1a0a;--red-bg:#1f0f0a;--gray-bg:#222;--shadow:0 1px 3px rgba(0,0,0,.2);--shadow-lg:0 4px 12px rgba(0,0,0,.3)}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden;padding-top:var(--safe-top);padding-bottom:calc(72px + var(--safe-bottom))}
+button{font-family:var(--font);cursor:pointer;border:none;background:none;color:var(--text)}
+input,select,textarea{font-family:var(--font);color:var(--text)}
+.topbar{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.topbar-logo{height:42px}
+.topbar-actions{display:flex;gap:8px}
+.topbar-btn{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);background:var(--bg-card);border:1px solid var(--border);font-size:18px}
+.topbar-btn:active{background:var(--bg-hover)}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg-card);border-top:1px solid var(--border);display:flex;padding-bottom:var(--safe-bottom);z-index:100}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 2px 6px;font-size:10px;font-weight:500;color:var(--text-muted);gap:2px;position:relative}
+.nav-item.active{color:var(--accent)}
+.nav-item svg{width:22px;height:22px}
+.nav-dot{width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:0}
+.nav-item.active .nav-dot{opacity:1}
+.badge-count{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;position:absolute;top:2px;right:12px}
+.page{display:none;padding:16px 20px 24px;animation:fadeIn .2s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
+.card-title{font-weight:600;font-size:15px}
+.greeting{font-family:var(--font-display);font-size:26px;margin-bottom:4px}
+.greeting-sub{color:var(--text-secondary);font-size:14px;margin-bottom:20px}
+.quick-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
+.stat-card.alert{border-left:3px solid var(--red)}.stat-card.warn{border-left:3px solid var(--yellow)}.stat-card.good{border-left:3px solid var(--green)}.stat-card.info{border-left:3px solid var(--accent)}
+.stat-num{font-size:28px;font-weight:700;line-height:1}
+.stat-label{font-size:12px;color:var(--text-secondary);margin-top:4px}
+.dash-section-title{font-weight:600;font-size:15px;margin:20px 0 10px}
+.alert-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;font-size:14px;cursor:pointer}
+.alert-item:active{background:var(--bg-hover)}
+.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.alert-dot.red{background:var(--red)}.alert-dot.yellow{background:var(--yellow)}.alert-dot.green{background:var(--green)}.alert-dot.gray{background:var(--gray)}.alert-dot.orange{background:#e87a1a}
+.alert-name{flex:1;font-weight:500}.alert-detail{font-size:12px;color:var(--text-secondary)}
+.search-bar{display:flex;gap:8px;margin-bottom:14px}
+.search-input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:15px;background:var(--bg-card);outline:none}
+.search-input:focus{border-color:var(--accent)}
+.cat-pills{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.cat-pills::-webkit-scrollbar{display:none}
+.cat-pill{padding:7px 14px;border-radius:20px;font-size:13px;font-weight:500;white-space:nowrap;background:var(--bg-card);border:1px solid var(--border)}
+.cat-pill.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.loc-header{font-weight:700;font-size:15px;padding:14px 0 6px;color:var(--accent);display:flex;align-items:center;gap:6px}
+.subgroup-title{font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);padding:8px 0 4px 12px}
+.inv-item{display:flex;align-items:center;padding:12px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:5px;box-shadow:var(--shadow);cursor:pointer}
+.inv-item:active{background:var(--bg-hover)}
+.inv-status{width:10px;height:10px;border-radius:50%;margin-right:12px;flex-shrink:0}
+.inv-status.green{background:var(--green)}.inv-status.yellow{background:var(--yellow)}.inv-status.red{background:var(--red)}.inv-status.gray{background:var(--gray)}
+.inv-info{flex:1;min-width:0}
+.inv-name{font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inv-meta{font-size:12px;color:var(--text-secondary);margin-top:2px}
+.inv-qty{text-align:right}
+.inv-qty-num{font-weight:700;font-size:16px}
+.inv-qty-unit{font-size:11px;color:var(--text-secondary)}
+.inv-rate{font-size:11px;margin-top:2px;color:var(--text-muted)}
+.inv-rate.warn{color:var(--yellow)}.inv-rate.danger{color:var(--red)}
+.inv-badges{display:flex;gap:4px;margin-top:3px;justify-content:flex-end}
+.inv-badge{font-size:9px;padding:2px 5px;border-radius:4px;font-weight:600}
+.inv-badge.exp{background:var(--red-bg);color:var(--red)}
+.inv-badge.notify{background:var(--yellow-bg);color:var(--yellow)}
+.notify-item{padding:12px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;box-shadow:var(--shadow);display:flex;align-items:center;gap:10px;cursor:pointer}
+.notify-item:active{background:var(--bg-hover)}
+.notify-item .n-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.notify-item .n-info{flex:1}
+.notify-item .n-name{font-weight:500;font-size:14px}
+.notify-item .n-detail{font-size:12px;color:var(--text-secondary);margin-top:2px}
+.notify-section-title{font-weight:600;font-size:13px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.show{display:flex}
+.modal-sheet{background:var(--bg);border-radius:16px 16px 0 0;width:100%;max-width:600px;max-height:85dvh;overflow-y:auto;padding:20px 20px calc(20px + var(--safe-bottom));animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-weight:700;font-size:18px;margin-bottom:16px}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:13px;font-weight:500;margin-bottom:5px;color:var(--text-secondary)}
+.form-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:15px;background:var(--bg-card);outline:none}
+.form-input:focus{border-color:var(--accent)}
+.form-row{display:flex;gap:10px}.form-row>*{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 20px;border-radius:var(--radius-sm);font-size:15px;font-weight:600;transition:all .15s}
+.btn-primary{background:var(--accent);color:#fff;width:100%}.btn-primary:active{opacity:.85}
+.btn-secondary{background:var(--bg-hover);border:1px solid var(--border)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-sm{padding:8px 14px;font-size:13px}
+.analytics-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.analytics-card h3{font-size:14px;font-weight:600;margin-bottom:10px}
+.bar-chart{display:flex;flex-direction:column;gap:8px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-label{width:90px;font-size:12px;color:var(--text-secondary);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:22px;background:var(--bg-hover);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;background:var(--accent);display:flex;align-items:center;padding-left:6px;font-size:11px;font-weight:600;color:#fff;min-width:28px;transition:width .5s ease}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
+.setting-info{flex:1}.setting-name{font-weight:500;font-size:14px}.setting-desc{font-size:12px;color:var(--text-secondary);margin-top:2px}
+.toggle{width:48px;height:28px;border-radius:14px;background:var(--border);position:relative;transition:background .2s;cursor:pointer;flex-shrink:0}
+.toggle.on{background:var(--green)}
+.toggle::after{content:'';width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.toggle.on::after{transform:translateX(20px)}
+.staff-chip{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:14px;font-size:13px;font-weight:500;background:var(--bg-hover);border:1px solid var(--border);margin:3px}
+.staff-chip .remove{font-size:16px;color:var(--text-muted);cursor:pointer}
+.fab{position:fixed;bottom:calc(82px + var(--safe-bottom));right:20px;width:52px;height:52px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:var(--shadow-lg);z-index:90}
+.fab:active{transform:scale(.92)}
+.waste-entry{padding:10px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:5px;font-size:13px}
+.waste-entry .waste-item{font-weight:500}.waste-entry .waste-meta{color:var(--text-secondary);font-size:12px;margin-top:2px}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-muted)}.empty-state p{font-size:14px}
+.toast{position:fixed;bottom:calc(82px + var(--safe-bottom));left:50%;transform:translateX(-50%);padding:10px 20px;background:var(--text);color:var(--bg);border-radius:20px;font-size:13px;font-weight:500;z-index:300;animation:toastIn .25s ease,toastOut .25s ease 2s forwards;pointer-events:none}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}}
+@keyframes toastOut{to{opacity:0;transform:translateX(-50%) translateY(-10px)}}
+.usage-stat{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.usage-stat:last-child{border:none}
+.usage-stat .us-label{color:var(--text-secondary)}.usage-stat .us-val{font-weight:600}
+.tracking-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.tracking-card .tc-name{font-weight:600;font-size:14px;margin-bottom:6px}
+.tracking-card .tc-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);padding:3px 0}
+.tracking-card .tc-val{font-weight:600;color:var(--text)}
+@media(min-width:768px){.quick-stats{grid-template-columns:repeat(4,1fr)}.page{padding:20px 32px 32px}body{max-width:900px;margin:0 auto}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <img class="topbar-logo" id="app-logo" alt="Pino's">
+  <div class="topbar-actions">
+    <button class="topbar-btn" onclick="exportData()">📥</button>
+    <button class="topbar-btn" onclick="toggleTheme()">🌙</button>
+  </div>
+</div>
+
+<div class="page active" id="page-dash">
+  <div class="greeting" id="greeting"></div>
+  <div class="greeting-sub" id="greeting-date"></div>
+  <div class="quick-stats" id="quick-stats"></div>
+  <div class="dash-section-title">⚠️ Needs Attention</div>
+  <div id="dash-alerts"></div>
+  <div class="dash-section-title">📊 Fastest Moving Items</div>
+  <div id="dash-fast"></div>
+</div>
+
+<div class="page" id="page-inv">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <h2 style="font-family:var(--font-display);font-size:22px">Inventory</h2>
+    <button class="btn btn-sm btn-secondary" onclick="openWasteLog()">🗑 Waste</button>
+  </div>
+  <div class="search-bar"><input class="search-input" id="inv-search" placeholder="Search items..." oninput="renderInventory()"></div>
+  <div class="cat-pills" id="cat-pills"></div>
+  <div id="inv-list"></div>
+</div>
+
+<div class="page" id="page-notify">
+  <h2 style="font-family:var(--font-display);font-size:22px;margin-bottom:14px">🔔 Alerts</h2>
+  <div id="notify-content"></div>
+</div>
+
+<div class="page" id="page-tracking">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <h2 style="font-family:var(--font-display);font-size:22px">Usage Tracking</h2>
+  </div>
+  <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">How long 1 unit of each item lasts based on recorded usage. Updates as you log stock changes.</p>
+  <div class="search-bar"><input class="search-input" id="track-search" placeholder="Search items..." oninput="renderTracking()"></div>
+  <div id="tracking-list"></div>
+</div>
+
+<div class="page" id="page-settings">
+  <h2 style="font-family:var(--font-display);font-size:22px;margin-bottom:14px">Settings</h2>
+  <div class="card"><div class="card-title" style="margin-bottom:10px">Staff Members</div><div id="staff-list"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input class="form-input" id="new-staff-name" placeholder="Name" style="flex:2">
+      <input class="form-input" id="new-staff-init" placeholder="Initials" maxlength="3" style="flex:1">
+      <button class="btn btn-primary btn-sm" style="width:auto;padding:8px 16px" onclick="addStaff()">Add</button>
+    </div>
+  </div>
+  <div class="card"><div class="card-title" style="margin-bottom:10px">Preferences</div>
+    <div class="setting-row"><div class="setting-info"><div class="setting-name">Dark Mode</div><div class="setting-desc">For evening use</div></div><div class="toggle" id="dark-toggle" onclick="toggleTheme()"></div></div>
+  </div>
+  <div class="card"><div class="card-title" style="margin-bottom:10px">Data</div>
+    <button class="btn btn-secondary btn-sm" onclick="exportData()" style="width:100%;margin-bottom:8px">📥 Export JSON</button>
+    <button class="btn btn-secondary btn-sm" onclick="exportCSV()" style="width:100%;margin-bottom:8px">📊 Export CSV</button>
+    <button class="btn btn-danger btn-sm" onclick="clearAllData()" style="width:100%">⚠️ Clear All Data</button>
+  </div>
+</div>
+
+<button class="fab" id="fab" onclick="handleFab()">+</button>
+
+<div class="bottom-nav">
+  <button class="nav-item active" onclick="goTo('dash')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span><div class="nav-dot"></div></button>
+  <button class="nav-item" onclick="goTo('inv')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg><span>Inventory</span><div class="nav-dot"></div></button>
+  <button class="nav-item" onclick="goTo('notify')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span>Alerts</span><div class="nav-dot"></div><span class="badge-count" id="notify-badge" style="display:none"></span></button>
+  <button class="nav-item" onclick="goTo('tracking')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Tracking</span><div class="nav-dot"></div></button>
+  <button class="nav-item" onclick="goTo('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg><span>Settings</span><div class="nav-dot"></div></button>
+</div>
+
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()"><div class="modal-sheet"><div class="modal-handle"></div><div id="modal-body"></div></div></div>
+
+<script>
+const LOGO_B64='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCADhAOEDASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAYHBAUIAwIB/8QAPRAAAQMEAAQEBQEGBAYDAQAAAQACAwQFBhEHEiExCBNBURQiYXGBMhUjQlKRoRYzcrFDU2KiwdEkVJLC/8QAHAEBAAIDAQEBAAAAAAAAAAAAAAQFAgMGBwEI/8QAOREAAQMDAgQDBwMDAgcAAAAAAQACAwQFESExBhJBURNhcSKBkaGxwfAUMlIHFdFC4RcjJDNDguL/2gAMAwEAAhEDEQA/AIkiIuNX6aRERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERFlWu3V91rBR2yiqK2oI2IoIy92vfQ7D6qzMa4E5hceSW6Po7RA7RIkf5koGv5W9B+XfhbY4ZJf2DKgVt0o6EZqJA31Ovw3VUorvuOHcDsIgNRmmdQzP5HO8qWvbHzcv6uSOL944/TZPppayLiX4Y6WFkdstVVeoyCTLFZaqUj7ulaD/TamC2y4y4gLmJuPLcw8sbXO9AAPmc/JVGiuW2ZR4Z80uMNkinFguk7uWGKenmoHkkgD5nDyyTsaBJJ9lF+LfDW4YNWNnhfJW2WY8sVU4DmY7+SQDoD7EDR+i1T0MkTebceSsLVxXQ3KXwW5a/s7r6aqBIiKGumRERERERERetHTVNbVxUlHBLUVEzgyOKNpc57j6ABeSv7wmWimdDeb7JG11S2RtLE8t6sboOdo+myRv7Bb6eHxpAxVV6uYtlG+pIzjYeZOFGbbwDzSqpDPU1VoopC0FkMkz3O37OLWEN/HMtFfOEWfWkFz7L8awfx0UolH9Ojv7KFcTb/AH3PslvF1qM3uVpuFBeKmgtkNNPLT0VMyGRzGcrmnTnvGy6Tm3110AAUhxvi1xkw+us1vNyoMrttSwBrblrzHPaPmhFTH/EQPlc4O7dfrLLaHmMZcWkZ38t9159DxZef+7ysc0409em+fqo3PFLBPJTzxPimicWSRvaWuY4dwQeoK+F0LZLjhHHyzXWI251hyu2SeRPDM5hqoHAfK48p/eRHqN/Q9iFTOc4leMOvTrZd4Nb+aCdnWOdv8zT/ALg9QVoqKR0PtDVp6rs7HxJT3XMeOSQbtP27/ULQIiKIujREREREREREREREU74Z8ML7mr/iW7t1raRzVc0R/ee4jHTn++9fVZxxukdytGSotXWQUcRmncGtHUqH2m23C718dBa6KesqpP0xQs5nH6/QfU9FcOKcFKa30P7d4iXimtlDA3zZacTtY1rQNnzJSdNA9df1Wxveb4jwol/wPw7sTsrzSblbNTwPG4yQfnqpgCGAd+Toeo1r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sBNIG8occL0x1so3y+M6Jpf3wM/FbvDMpvGI3sXez1AZMRyyskBdHM3ey142N/fuPQq05fETdzQ8kWM0Lav1kdUudH9+TQP45lSKLKOpliGGOwFHrrHb6+QSVEQc4ddR9CM+9WZaONmZ02TC7V80NbTOb5ctCG+XFy73tnctd9Tv6qwafjhht4rKGC745Ozmla0y1EccrKfmIBf767b0N9Fzki2x107OufVQqzhS11eCY+UgY9nT5DRdK8deCtDn8sGWYxXssmXUkP8A8aujaDFVs5fljm13b0ADhsgehGtcrZXl3FrBayS05Rgr2VUZ18Qxj3Qyexa5u2kHW++/srKwPiflWIRilpKoVtAO1JVkvYwb7MO9t+w6fRWJF4iWvp2irw4OlHfkrwWk/mPY/v8AlTJJKGrANQ3Udx9wuHdwxfba8tonczT2IHxDjv6Z9VyjFa+NHGOohtlLj9wfQSOB0IDT0w6/qfI/QOvps9OgJV73jwhy0PD+lOJZRUU2YRxg1b5JOWjqnd+UAAlnL0Ad16DqNnY21+485ZXQuhtdFQWZh6B0e5pG/ZzgB/2qI2ziPndu8wUuU3EiRxe4TOEw2Ts65wddSeg0Fm2tpYW+HG32fIYSPgq7VGZppA1/mST8RnHuyofF4WOOdzlFPc7paoIXH55JLiXADr6NbsqwMX8JuA4e2O7cSs0+NZF87qWPVPC8jro7294+g1tYlfxP4gVsBgmyquYx3fyQyF3/AOmNDh+CopVVNTVzGerqZ6mU95JpHPcfySSvjroxoxG1S6f+n88juarnHuyT8Tj6FWrmXFinp7NFjHDe3tsFmhZ5YliiETy32Y0foH1/Ud+iqZxLnOc4lznElxJ2ST3JPuvxFVzTvmdzPK9At1rpbbF4VO3A69z6nr+YRERaVYIiIiIiIiIiIiIiIiIiIiK5PDRm1tsFXXY/eKllLT18rZqeaR2mNl1yua4ntzAN0e3y/Ve3HLwxWXK5Z8j4fVrcav1RI6apET3fD1hdsnoHajJJ3sdPp6qlVt7Pk+R2doZa77caRgGgyOocGj7N3oKyprh4TOR4yFw194OFwqTVQScjjuDt2zkbfNZvDHwoz2a9nJuLt+tzLZRyCV9O2bmFSRojzJHEabvWxrZ7Lf8AHDPos1vkENuY6O028ObT8w0ZXHu/XoNAAD7+/SFXa8Xa7y+bdbnWVzt7HnzOeAfcAnQ/CwVjVV5mbyNGAt/D/CMdrl/USv55OnQDO/qfP5IiIq9dkiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIv/Z';
+document.getElementById('app-logo').src=LOGO_B64;
+const DB_NAME='PinosOpsDB',DB_VERSION=3;
+let db=null;
+const PAGES=['dash','inv','notify','tracking','settings'];
+
+let state={inventory:[],wasteLog:[],invHistory:[],
+  staff:[{name:'Eddie',initials:'ED'},{name:'Bilal',initials:'BZ'}],
+  settings:{darkMode:false},
+  currentPage:'dash',invLocation:'all'};
+
+const LOCATIONS=[
+  {id:'back-fridge',label:'Back Fridge',icon:'🧊'},
+  {id:'back-freezer',label:'Back Freezer',icon:'❄️'},
+  {id:'storage-left',label:'Storage Freezer (Left)',icon:'📦'},
+  {id:'storage-mid',label:'Storage Freezer (Mid)',icon:'📦'},
+  {id:'storage-right',label:'Storage Freezer (Right)',icon:'📦'},
+  {id:'walk-in',label:'Walk-In',icon:'🚶'},
+  {id:'pantry',label:'Pantry',icon:'🏪'},
+];
+
+const DEFAULT_INVENTORY=[
+// Back Fridge — Cheeses
+{id:'bf1',name:'Asiago (Shredded)',loc:'back-fridge',sub:'Cheeses',qty:0,unit:'bags',par:3,notifyOut:true,notifyLow:true},
+{id:'bf2',name:'Fontina (Shredded)',loc:'back-fridge',sub:'Cheeses',qty:0,unit:'bags',par:3,notifyOut:true,notifyLow:true},
+{id:'bf3',name:'Provolone (Shredded)',loc:'back-fridge',sub:'Cheeses',qty:0,unit:'bags',par:3,notifyOut:true,notifyLow:true},
+{id:'bf4',name:'Goat Cheese',loc:'back-fridge',sub:'Cheeses',qty:0,unit:'containers',par:2,notifyOut:true,notifyLow:false},
+{id:'bf5',name:'Cheddar',loc:'back-fridge',sub:'Cheeses',qty:0,unit:'blocks',par:3,notifyOut:true,notifyLow:true},
+{id:'bf6',name:'Ricotta Cheese',loc:'back-fridge',sub:'Cheeses',qty:0,unit:'containers',par:2,notifyOut:true,notifyLow:false},
+// Back Fridge — Meats
+{id:'bf7',name:'Pancetta',loc:'back-fridge',sub:'Meats',qty:0,unit:'packs',par:2,notifyOut:true,notifyLow:true},
+{id:'bf8',name:'Chicken (Thawed)',loc:'back-fridge',sub:'Meats',qty:0,unit:'lbs',par:8,notifyOut:true,notifyLow:true},
+{id:'bf9',name:'Pepperoni (1 Bag)',loc:'back-fridge',sub:'Meats',qty:0,unit:'bags',par:2,notifyOut:true,notifyLow:true},
+{id:'bf10',name:'Anchovies',loc:'back-fridge',sub:'Meats',qty:0,unit:'cans',par:2,notifyOut:false,notifyLow:false},
+// Back Fridge — Sauces
+{id:'bf11',name:'Salsa',loc:'back-fridge',sub:'Sauces',qty:0,unit:'containers',par:2,notifyOut:true,notifyLow:false},
+{id:'bf12',name:'Buffalo Sauce',loc:'back-fridge',sub:'Sauces',qty:0,unit:'bottles',par:2,notifyOut:true,notifyLow:false},
+{id:'bf13',name:'Alfredo Sauce',loc:'back-fridge',sub:'Sauces',qty:0,unit:'containers',par:3,notifyOut:true,notifyLow:true},
+// Back Freezer — Pasta
+{id:'bz1',name:'Linguine',loc:'back-freezer',sub:'Pasta',qty:0,unit:'bags',par:4,notifyOut:true,notifyLow:true},
+{id:'bz2',name:'Fettuccine',loc:'back-freezer',sub:'Pasta',qty:0,unit:'bags',par:4,notifyOut:true,notifyLow:true},
+{id:'bz3',name:'Penne',loc:'back-freezer',sub:'Pasta',qty:0,unit:'bags',par:4,notifyOut:true,notifyLow:true},
+{id:'bz4',name:'Spaghetti',loc:'back-freezer',sub:'Pasta',qty:0,unit:'bags',par:4,notifyOut:true,notifyLow:true},
+// Back Freezer — Crusts
+{id:'bz5',name:'Small Gluten-Free Crust',loc:'back-freezer',sub:'Crusts',qty:0,unit:'pcs',par:6,notifyOut:true,notifyLow:true},
+{id:'bz6',name:'Small Cauliflower Crust',loc:'back-freezer',sub:'Crusts',qty:0,unit:'pcs',par:6,notifyOut:true,notifyLow:true},
+{id:'bz7',name:'Medium Gluten-Free Crust',loc:'back-freezer',sub:'Crusts',qty:0,unit:'pcs',par:6,notifyOut:true,notifyLow:true},
+{id:'bz8',name:'Medium Cauliflower Crust',loc:'back-freezer',sub:'Crusts',qty:0,unit:'pcs',par:6,notifyOut:true,notifyLow:true},
+{id:'bz9',name:'Whole Wheat Crust',loc:'back-freezer',sub:'Crusts',qty:0,unit:'pcs',par:6,notifyOut:true,notifyLow:true},
+// Back Freezer — Meats
+{id:'bz10',name:'Shrimp',loc:'back-freezer',sub:'Meats',qty:0,unit:'bags',par:3,notifyOut:true,notifyLow:true},
+{id:'bz11',name:'Ground Beef',loc:'back-freezer',sub:'Meats',qty:0,unit:'bags',par:4,notifyOut:true,notifyLow:true},
+{id:'bz12',name:'Italian Sausage',loc:'back-freezer',sub:'Meats',qty:0,unit:'bags',par:4,notifyOut:true,notifyLow:true},
+{id:'bz13',name:'Philly Steak',loc:'back-freezer',sub:'Meats',qty:0,unit:'bags',par:3,notifyOut:true,notifyLow:true},
+{id:'bz14',name:'Chicken',loc:'back-freezer',sub:'Meats',qty:0,unit:'bags',par:4,notifyOut:true,notifyLow:true},
+{id:'bz15',name:'Prosciutto',loc:'back-freezer',sub:'Meats',qty:0,unit:'packs',par:2,notifyOut:true,notifyLow:false},
+{id:'bz16',name:'Sopressata',loc:'back-freezer',sub:'Meats',qty:0,unit:'packs',par:2,notifyOut:true,notifyLow:false},
+{id:'bz17',name:'Salami',loc:'back-freezer',sub:'Meats',qty:0,unit:'packs',par:2,notifyOut:true,notifyLow:false},
+// Back Freezer — Frozen Produce
+{id:'bz18',name:'Broccoli',loc:'back-freezer',sub:'Frozen Produce',qty:0,unit:'bags',par:3,notifyOut:true,notifyLow:true},
+{id:'bz19',name:'Corn',loc:'back-freezer',sub:'Frozen Produce',qty:0,unit:'bags',par:2,notifyOut:true,notifyLow:false},
+{id:'bz20',name:'Asparagus',loc:'back-freezer',sub:'Frozen Produce',qty:0,unit:'bags',par:2,notifyOut:true,notifyLow:false},
+{id:'bz21',name:'Zucchini',loc:'back-freezer',sub:'Frozen Produce',qty:0,unit:'bags',par:2,notifyOut:true,notifyLow:false},
+{id:'bz22',name:'Eggplant',loc:'back-freezer',sub:'Frozen Produce',qty:0,unit:'bags',par:2,notifyOut:true,notifyLow:false},
+{id:'bz23',name:'Coloured Bell Peppers',loc:'back-freezer',sub:'Frozen Produce',qty:0,unit:'bags',par:2,notifyOut:true,notifyLow:false},
+{id:'bz24',name:'Mixed Veggie',loc:'back-freezer',sub:'Frozen Produce',qty:0,unit:'bags',par:2,notifyOut:false,notifyLow:false},
+{id:'bz25',name:'Avocado',loc:'back-freezer',sub:'Frozen Produce',qty:0,unit:'bags',par:2,notifyOut:false,notifyLow:false},
+// Back Freezer — Other
+{id:'bz26',name:'Spinach Dip',loc:'back-freezer',sub:'Other',qty:0,unit:'containers',par:2,notifyOut:true,notifyLow:false},
+{id:'bz27',name:'Lasagna',loc:'back-freezer',sub:'Other',qty:0,unit:'trays',par:3,notifyOut:true,notifyLow:true},
+// Storage Left — Desserts
+{id:'sl1',name:'Lava Cake',loc:'storage-left',sub:'Desserts',qty:0,unit:'pcs',par:6,notifyOut:true,notifyLow:true},
+{id:'sl2',name:'Apple Crumble',loc:'storage-left',sub:'Desserts',qty:0,unit:'pcs',par:4,notifyOut:true,notifyLow:false},
+{id:'sl3',name:'Tiramisu Cheesecake',loc:'storage-left',sub:'Desserts',qty:0,unit:'pcs',par:4,notifyOut:true,notifyLow:false},
+{id:'sl4',name:'Chocolate Cake',loc:'storage-left',sub:'Desserts',qty:0,unit:'pcs',par:4,notifyOut:true,notifyLow:false},
+{id:'sl5',name:'Carrot Cake',loc:'storage-left',sub:'Desserts',qty:0,unit:'pcs',par:4,notifyOut:true,notifyLow:false},
+// Storage Mid
+{id:'sm1',name:'Tortellini',loc:'storage-mid',sub:'Pasta',qty:0,unit:'bags',par:4,notifyOut:true,notifyLow:true},
+{id:'sm2',name:'Meatballs',loc:'storage-mid',sub:'Meats',qty:0,unit:'bags',par:3,notifyOut:true,notifyLow:true},
+{id:'sm3',name:'Pesto Sauce',loc:'storage-mid',sub:'Sauces',qty:0,unit:'containers',par:3,notifyOut:true,notifyLow:true},
+// Storage Right
+{id:'sr1',name:'Bacon Bits',loc:'storage-right',sub:'Meats',qty:0,unit:'bags',par:4,notifyOut:true,notifyLow:true},
+{id:'sr2',name:'Bacon Crumble',loc:'storage-right',sub:'Meats',qty:0,unit:'bags',par:3,notifyOut:true,notifyLow:true},
+{id:'sr3',name:'Salad Bacon Bits',loc:'storage-right',sub:'Meats',qty:0,unit:'bags',par:3,notifyOut:true,notifyLow:true},
+// Walk-In — Cheeses
+{id:'wi1',name:'Mozzarella',loc:'walk-in',sub:'Cheeses',qty:0,unit:'blocks',par:10,notifyOut:true,notifyLow:true},
+{id:'wi2',name:'Fontina (Uncut)',loc:'walk-in',sub:'Cheeses',qty:0,unit:'blocks',par:3,notifyOut:true,notifyLow:true},
+{id:'wi3',name:'Provolone (Uncut)',loc:'walk-in',sub:'Cheeses',qty:0,unit:'blocks',par:3,notifyOut:true,notifyLow:true},
+{id:'wi4',name:'Feta',loc:'walk-in',sub:'Cheeses',qty:0,unit:'containers',par:3,notifyOut:true,notifyLow:true},
+{id:'wi5',name:'Ricotta',loc:'walk-in',sub:'Cheeses',qty:0,unit:'containers',par:2,notifyOut:true,notifyLow:false},
+// Walk-In — Produce
+{id:'wi6',name:'Mushrooms',loc:'walk-in',sub:'Produce',qty:0,unit:'lbs',par:8,notifyOut:true,notifyLow:true},
+{id:'wi7',name:'Green Pepper',loc:'walk-in',sub:'Produce',qty:0,unit:'lbs',par:10,notifyOut:true,notifyLow:true},
+{id:'wi8',name:'Tomatoes',loc:'walk-in',sub:'Produce',qty:0,unit:'lbs',par:12,notifyOut:true,notifyLow:true},
+{id:'wi9',name:'Red Onions',loc:'walk-in',sub:'Produce',qty:0,unit:'lbs',par:8,notifyOut:true,notifyLow:true},
+{id:'wi10',name:'Onions',loc:'walk-in',sub:'Produce',qty:0,unit:'lbs',par:10,notifyOut:true,notifyLow:true},
+{id:'wi11',name:'Iceberg Lettuce',loc:'walk-in',sub:'Produce',qty:0,unit:'heads',par:8,notifyOut:true,notifyLow:true},
+{id:'wi12',name:'Romaine Lettuce',loc:'walk-in',sub:'Produce',qty:0,unit:'heads',par:10,notifyOut:true,notifyLow:true},
+{id:'wi13',name:'Garlic',loc:'walk-in',sub:'Produce',qty:0,unit:'lbs',par:4,notifyOut:true,notifyLow:false},
+{id:'wi14',name:'Jalapeño',loc:'walk-in',sub:'Produce',qty:0,unit:'jars',par:3,notifyOut:true,notifyLow:false},
+{id:'wi15',name:'Hot Pepper',loc:'walk-in',sub:'Produce',qty:0,unit:'jars',par:3,notifyOut:true,notifyLow:false},
+{id:'wi16',name:'Green Olives',loc:'walk-in',sub:'Produce',qty:0,unit:'jars',par:3,notifyOut:true,notifyLow:false},
+{id:'wi17',name:'Sundried Tomatoes',loc:'walk-in',sub:'Produce',qty:0,unit:'jars',par:3,notifyOut:true,notifyLow:false},
+{id:'wi18',name:'Spinach',loc:'walk-in',sub:'Produce',qty:0,unit:'bags',par:3,notifyOut:true,notifyLow:false},
+{id:'wi19',name:'Arugula',loc:'walk-in',sub:'Produce',qty:0,unit:'bags',par:3,notifyOut:true,notifyLow:false},
+{id:'wi20',name:'Portobello Mushrooms',loc:'walk-in',sub:'Produce',qty:0,unit:'pcs',par:6,notifyOut:true,notifyLow:false},
+{id:'wi21',name:'Kalamata Olives',loc:'walk-in',sub:'Produce',qty:0,unit:'jars',par:2,notifyOut:true,notifyLow:false},
+// Walk-In — Meats
+{id:'wi22',name:'Ham',loc:'walk-in',sub:'Meats',qty:0,unit:'lbs',par:8,notifyOut:true,notifyLow:true},
+// Walk-In — Sauces & Dressings
+{id:'wi23',name:'Mild Sauce',loc:'walk-in',sub:'Sauces & Dressings',qty:0,unit:'bottles',par:3,notifyOut:true,notifyLow:false},
+{id:'wi24',name:'Medium Sauce',loc:'walk-in',sub:'Sauces & Dressings',qty:0,unit:'bottles',par:3,notifyOut:true,notifyLow:false},
+{id:'wi25',name:'Hot Sauce',loc:'walk-in',sub:'Sauces & Dressings',qty:0,unit:'bottles',par:3,notifyOut:true,notifyLow:false},
+{id:'wi26',name:'Suicide Sauce',loc:'walk-in',sub:'Sauces & Dressings',qty:0,unit:'bottles',par:2,notifyOut:true,notifyLow:false},
+{id:'wi27',name:'Honey Garlic Sauce',loc:'walk-in',sub:'Sauces & Dressings',qty:0,unit:'bottles',par:3,notifyOut:true,notifyLow:false},
+{id:'wi28',name:'BBQ Sauce',loc:'walk-in',sub:'Sauces & Dressings',qty:0,unit:'bottles',par:3,notifyOut:true,notifyLow:false},
+{id:'wi29',name:'Balsamic Dressing',loc:'walk-in',sub:'Sauces & Dressings',qty:0,unit:'bottles',par:3,notifyOut:true,notifyLow:false},
+{id:'wi30',name:'Caesar Dressing',loc:'walk-in',sub:'Sauces & Dressings',qty:0,unit:'bottles',par:3,notifyOut:true,notifyLow:false},
+{id:'wi31',name:'Ranch Dressing',loc:'walk-in',sub:'Sauces & Dressings',qty:0,unit:'bottles',par:3,notifyOut:true,notifyLow:false},
+{id:'wi32',name:'French Dressing',loc:'walk-in',sub:'Sauces & Dressings',qty:0,unit:'bottles',par:2,notifyOut:false,notifyLow:false},
+{id:'wi33',name:'Italian Dressing',loc:'walk-in',sub:'Sauces & Dressings',qty:0,unit:'bottles',par:2,notifyOut:false,notifyLow:false},
+// Walk-In — Wine
+{id:'wi34',name:'Pinot Grigio Wine',loc:'walk-in',sub:'Wine',qty:0,unit:'bottles',par:4,notifyOut:true,notifyLow:true},
+{id:'wi35',name:'Chardonnay Wine',loc:'walk-in',sub:'Wine',qty:0,unit:'bottles',par:4,notifyOut:true,notifyLow:true},
+{id:'wi36',name:'Merlot Wine',loc:'walk-in',sub:'Wine',qty:0,unit:'bottles',par:4,notifyOut:true,notifyLow:true},
+// Pantry
+{id:'pa1',name:'Honey',loc:'pantry',sub:'Condiments',qty:0,unit:'bottles',par:2,notifyOut:true,notifyLow:false},
+{id:'pa2',name:'Marinara',loc:'pantry',sub:'Sauces',qty:0,unit:'cans',par:6,notifyOut:true,notifyLow:true},
+{id:'pa3',name:'Pineapple',loc:'pantry',sub:'Canned Goods',qty:0,unit:'cans',par:4,notifyOut:true,notifyLow:false},
+{id:'pa4',name:'Black Olives',loc:'pantry',sub:'Canned Goods',qty:0,unit:'cans',par:4,notifyOut:true,notifyLow:true},
+{id:'pa5',name:'Red Peppers',loc:'pantry',sub:'Canned Goods',qty:0,unit:'cans',par:3,notifyOut:true,notifyLow:false},
+{id:'pa6',name:'Olive Oil',loc:'pantry',sub:'Oils & Spices',qty:0,unit:'litres',par:3,notifyOut:true,notifyLow:true},
+{id:'pa7',name:'Veggie Oil',loc:'pantry',sub:'Oils & Spices',qty:0,unit:'litres',par:3,notifyOut:true,notifyLow:true},
+{id:'pa8',name:'Chili Flakes',loc:'pantry',sub:'Oils & Spices',qty:0,unit:'containers',par:2,notifyOut:true,notifyLow:false},
+{id:'pa9',name:'Italian Spices',loc:'pantry',sub:'Oils & Spices',qty:0,unit:'containers',par:2,notifyOut:true,notifyLow:false},
+];
+
+// ─── USAGE TRACKING ───
+// Calculates from invHistory: for each item, how many units consumed over how many days = days per unit
+function calcUsageRate(itemId){
+  const logs=state.invHistory.filter(h=>h.itemId===itemId&&h.to<h.from); // only reductions
+  if(logs.length<1)return null;
+  // Total units consumed
+  let totalConsumed=0;
+  logs.forEach(l=>totalConsumed+=(l.from-l.to));
+  // Time span from first to last log
+  const dates=logs.map(l=>new Date(l.at).getTime()).sort((a,b)=>a-b);
+  let daySpan=(dates[dates.length-1]-dates[0])/(1000*60*60*24);
+  if(daySpan<1)daySpan=1; // minimum 1 day
+  const unitsPerDay=totalConsumed/daySpan;
+  const daysPerUnit=unitsPerDay>0?(1/unitsPerDay):null;
+  return{totalConsumed,daySpan:Math.round(daySpan),unitsPerDay:Math.round(unitsPerDay*100)/100,daysPerUnit:daysPerUnit?Math.round(daysPerUnit*10)/10:null,logCount:logs.length};
+}
+function getDaysLeft(item){
+  const r=calcUsageRate(item.id);
+  if(!r||!r.unitsPerDay||r.unitsPerDay<=0)return null;
+  return Math.round(item.qty/r.unitsPerDay);
+}
+
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('state'))d.createObjectStore('state');};r.onsuccess=e=>{db=e.target.result;res(db);};r.onerror=e=>rej(e);})}
+function saveToDB(){if(!db)return;const tx=db.transaction('state','readwrite');tx.objectStore('state').put(JSON.parse(JSON.stringify(state)),'appState');}
+function loadFromDB(){return new Promise(res=>{if(!db){res();return;}const tx=db.transaction('state','readonly');const r=tx.objectStore('state').get('appState');r.onsuccess=()=>{if(r.result){Object.assign(state,r.result);const ids=new Set(state.inventory.map(i=>i.id));DEFAULT_INVENTORY.forEach(d=>{if(!ids.has(d.id))state.inventory.push({...d});});state.inventory.forEach(i=>{if(i.notifyOut===undefined)i.notifyOut=true;if(i.notifyLow===undefined)i.notifyLow=false;if(!i.loc)i.loc='walk-in';if(!i.sub)i.sub='Other';});}res();};r.onerror=()=>res();})}
+
+function goTo(p){state.currentPage=p;document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));document.getElementById('page-'+p).classList.add('active');document.querySelectorAll('.nav-item').forEach((n,i)=>n.classList.toggle('active',PAGES[i]===p));document.getElementById('fab').style.display=(p==='inv')?'flex':'none';renderPage(p);saveToDB();}
+function renderPage(p){switch(p){case'dash':renderDashboard();break;case'inv':renderInventory();break;case'notify':renderNotify();break;case'tracking':renderTracking();break;case'settings':renderSettings();break;}updateBadge();}
+function handleFab(){if(state.currentPage==='inv')openAddItem();}
+
+function today(){return new Date().toISOString().split('T')[0];}
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
+function getStatus(i){if(i.qty<=0)return'gray';const r=i.qty/i.par;if(r<=0.25)return'red';if(r<=0.5)return'yellow';return'green';}
+function getLocLabel(id){return LOCATIONS.find(l=>l.id===id)?.label||id;}
+function getLocIcon(id){return LOCATIONS.find(l=>l.id===id)?.icon||'📍';}
+function getGreeting(){const h=new Date().getHours();return h<12?'Good morning':h<17?'Good afternoon':'Good evening';}
+
+function getNotifications(){
+  const n=[];
+  state.inventory.forEach(i=>{
+    if(i.notifyOut&&i.qty<=0)n.push({type:'out',item:i,msg:'Out of stock'});
+    else if(i.notifyLow&&i.qty>0&&i.qty/i.par<=0.25)n.push({type:'critical',item:i,msg:`Critical — ${i.qty} ${i.unit} left`});
+    else if(i.notifyLow&&i.qty>0&&i.qty/i.par<=0.5)n.push({type:'low',item:i,msg:`Running low — ${i.qty} ${i.unit}`});
+    if(i.expDate){const days=Math.ceil((new Date(i.expDate)-new Date())/(864e5));if(days<=0)n.push({type:'expired',item:i,msg:'Expired'});else if(days<=3)n.push({type:'expiring',item:i,msg:`Expires in ${days}d`});}
+    if(i.shelfLife&&i.shelfLifeStart){const end=new Date(new Date(i.shelfLifeStart).getTime()+i.shelfLife*864e5);const days=Math.ceil((end-new Date())/864e5);if(days<=0)n.push({type:'expired',item:i,msg:'Past shelf life'});else if(days<=3)n.push({type:'expiring',item:i,msg:`${days}d shelf life left`});}
+  });
+  return n;
+}
+function updateBadge(){const n=getNotifications().length;const b=document.getElementById('notify-badge');if(n>0){b.textContent=n;b.style.display='inline';}else b.style.display='none';}
+
+// ─── DASHBOARD ───
+function renderDashboard(){
+  document.getElementById('greeting').textContent=getGreeting();
+  document.getElementById('greeting-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const inv=state.inventory,oos=inv.filter(i=>i.qty<=0).length,crit=inv.filter(i=>getStatus(i)==='red'&&i.qty>0).length,warn=inv.filter(i=>getStatus(i)==='yellow').length,notifs=getNotifications().length;
+  document.getElementById('quick-stats').innerHTML=`
+    <div class="stat-card ${oos>0?'alert':'good'}"><div class="stat-num">${oos}</div><div class="stat-label">Out of Stock</div></div>
+    <div class="stat-card ${crit>0?'alert':'good'}"><div class="stat-num">${crit}</div><div class="stat-label">Critical</div></div>
+    <div class="stat-card ${warn>0?'warn':'good'}"><div class="stat-num">${warn}</div><div class="stat-label">Low</div></div>
+    <div class="stat-card ${notifs>0?'alert':'info'}"><div class="stat-num">${notifs}</div><div class="stat-label">Alerts</div></div>`;
+  document.getElementById('dash-alerts').innerHTML=notifs===0?'<div class="alert-item"><span style="color:var(--green)">✓</span> All stock levels healthy</div>':getNotifications().slice(0,6).map(n=>`<div class="alert-item" onclick="openItemDetail('${n.item.id}')"><div class="alert-dot ${n.type==='out'?'gray':n.type==='critical'?'red':n.type==='low'?'yellow':'orange'}"></div><span class="alert-name">${n.item.name}</span><span class="alert-detail">${n.msg}</span></div>`).join('');
+
+  // Fastest moving — items with highest units/day
+  const tracked=state.inventory.map(i=>({item:i,rate:calcUsageRate(i.id)})).filter(x=>x.rate&&x.rate.unitsPerDay>0).sort((a,b)=>b.rate.unitsPerDay-a.rate.unitsPerDay).slice(0,5);
+  if(tracked.length===0){
+    document.getElementById('dash-fast').innerHTML='<div class="alert-item" style="cursor:default"><span style="color:var(--text-muted)">📊</span> <span class="alert-name" style="color:var(--text-muted)">Usage data will appear as you log stock changes</span></div>';
+  }else{
+    document.getElementById('dash-fast').innerHTML=tracked.map(x=>{
+      const dl=getDaysLeft(x.item);
+      const dlClass=dl!==null?(dl<=2?'danger':dl<=5?'warn':''):'';
+      return`<div class="alert-item" onclick="openItemDetail('${x.item.id}')"><div class="alert-dot ${getStatus(x.item)==='green'?'green':getStatus(x.item)==='yellow'?'yellow':getStatus(x.item)==='red'?'red':'gray'}"></div><span class="alert-name">${x.item.name}</span><span class="alert-detail" style="${dlClass==='danger'?'color:var(--red)':dlClass==='warn'?'color:var(--yellow)':''}">${x.rate.unitsPerDay} ${x.item.unit}/day${dl!==null?' · ~'+dl+'d left':''}</span></div>`;
+    }).join('');
+  }
+}
+
+// ─── INVENTORY ───
+function renderInventory(){
+  document.getElementById('cat-pills').innerHTML=`<button class="cat-pill ${state.invLocation==='all'?'active':''}" onclick="setLoc('all')">All</button>`+LOCATIONS.map(l=>`<button class="cat-pill ${state.invLocation===l.id?'active':''}" onclick="setLoc('${l.id}')">${l.icon} ${l.label.replace('Storage Freezer ','Stor. ')}</button>`).join('');
+  const q=(document.getElementById('inv-search')?.value||'').toLowerCase();
+  let items=state.inventory.filter(i=>(state.invLocation==='all'||i.loc===state.invLocation)&&i.name.toLowerCase().includes(q));
+  const list=document.getElementById('inv-list');
+  if(!items.length){list.innerHTML='<div class="empty-state"><p>No items found</p></div>';return;}
+  if(state.invLocation==='all'){
+    let html='';
+    LOCATIONS.forEach(loc=>{
+      const li=items.filter(i=>i.loc===loc.id);if(!li.length)return;
+      html+=`<div class="loc-header">${loc.icon} ${loc.label}</div>`;
+      const subs=[...new Set(li.map(i=>i.sub))];
+      subs.forEach(sub=>{html+=`<div class="subgroup-title">${sub}</div>`;li.filter(i=>i.sub===sub).sort((a,b)=>a.name.localeCompare(b.name)).forEach(i=>{html+=invHTML(i);});});
+    });list.innerHTML=html;
+  }else{
+    const subs=[...new Set(items.map(i=>i.sub))];let html='';
+    subs.forEach(sub=>{html+=`<div class="subgroup-title">${sub}</div>`;items.filter(i=>i.sub===sub).sort((a,b)=>a.name.localeCompare(b.name)).forEach(i=>{html+=invHTML(i);});});
+    list.innerHTML=html;
+  }
+}
+function invHTML(i){
+  const st=getStatus(i);
+  const rate=calcUsageRate(i.id);
+  const dl=getDaysLeft(i);
+  const dlClass=dl!==null?(dl<=2?'danger':dl<=5?'warn':''):'';
+  let rateText='';
+  if(rate&&rate.daysPerUnit!==null)rateText=`1 ${i.unit.replace(/s$/,'')} ≈ ${rate.daysPerUnit}d`;
+  else if(dl!==null)rateText=`~${dl}d left`;
+  return`<div class="inv-item" onclick="openItemDetail('${i.id}')"><div class="inv-status ${st}"></div><div class="inv-info"><div class="inv-name">${i.name}</div><div class="inv-meta">${i.sub}</div></div><div class="inv-qty"><div class="inv-qty-num">${i.qty}</div><div class="inv-qty-unit">${i.unit}</div>${rateText?`<div class="inv-rate ${dlClass}">${rateText}</div>`:''}</div></div>`;
+}
+function setLoc(l){state.invLocation=l;renderInventory();}
+
+function openItemDetail(id){
+  const item=state.inventory.find(i=>i.id===id);if(!item)return;
+  const st=getStatus(item);
+  const stL=st==='green'?'Healthy':st==='yellow'?'Low':st==='red'?'Critical':'Out';
+  const stC=st==='green'?'var(--green)':st==='yellow'?'var(--yellow)':st==='red'?'var(--red)':'var(--gray)';
+  const rate=calcUsageRate(item.id);
+  const dl=getDaysLeft(item);
+
+  let usageHTML='<div style="color:var(--text-muted);font-size:13px;padding:10px 0">No usage data yet — will calculate as you log stock changes.</div>';
+  if(rate){
+    usageHTML=`<div style="margin-bottom:16px">
+      <div class="usage-stat"><span class="us-label">Burn rate</span><span class="us-val">${rate.unitsPerDay} ${item.unit}/day</span></div>
+      <div class="usage-stat"><span class="us-label">1 ${item.unit.replace(/s$/,'')} lasts</span><span class="us-val">${rate.daysPerUnit!==null?rate.daysPerUnit+' days':'—'}</span></div>
+      <div class="usage-stat"><span class="us-label">Est. days remaining</span><span class="us-val" style="${dl!==null&&dl<=3?'color:var(--red)':''}">${dl!==null?dl+' days':'—'}</span></div>
+      <div class="usage-stat"><span class="us-label">Total consumed</span><span class="us-val">${rate.totalConsumed} ${item.unit} over ${rate.daySpan}d</span></div>
+      <div class="usage-stat"><span class="us-label">Data points</span><span class="us-val">${rate.logCount} reductions</span></div>
+    </div>`;
+  }
+
+  document.getElementById('modal-body').innerHTML=`
+    <div class="modal-title">${item.name}</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${stC}"></span>
+      <span style="font-size:13px;font-weight:600;color:${stC}">${stL}</span>
+      <span style="font-size:12px;color:var(--text-secondary);margin-left:auto">${getLocIcon(item.loc)} ${getLocLabel(item.loc)}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="card" style="margin:0;text-align:center"><div style="font-size:24px;font-weight:700">${item.qty}</div><div style="font-size:11px;color:var(--text-secondary)">${item.unit} in stock</div></div>
+      <div class="card" style="margin:0;text-align:center"><div style="font-size:24px;font-weight:700">${item.par}</div><div style="font-size:11px;color:var(--text-secondary)">par level</div></div>
+    </div>
+    <div style="font-weight:600;font-size:14px;margin-bottom:6px">📊 Usage Tracking</div>
+    ${usageHTML}
+    <div class="form-group"><label class="form-label">Update Quantity</label>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="adjQ(-5)" style="font-size:18px;width:48px">-5</button>
+        <button class="btn btn-secondary btn-sm" onclick="adjQ(-1)" style="font-size:18px;width:48px">-1</button>
+        <input class="form-input" id="qty-input" type="number" value="${item.qty}" style="text-align:center;font-size:18px;font-weight:700">
+        <button class="btn btn-secondary btn-sm" onclick="adjQ(1)" style="font-size:18px;width:48px">+1</button>
+        <button class="btn btn-secondary btn-sm" onclick="adjQ(5)" style="font-size:18px;width:48px">+5</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Par Level</label><input class="form-input" id="par-input" type="number" value="${item.par}"></div>
+      <div class="form-group"><label class="form-label">Sub-group</label><input class="form-input" id="sub-input" value="${item.sub}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Location</label>
+      <select class="form-input" id="loc-input">${LOCATIONS.map(l=>`<option value="${l.id}" ${item.loc===l.id?'selected':''}>${l.icon} ${l.label}</option>`).join('')}</select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Expiry Date</label><input class="form-input" id="exp-input" type="date" value="${item.expDate||''}"></div>
+      <div class="form-group"><label class="form-label">Shelf Life (days)</label><input class="form-input" id="shelf-input" type="number" value="${item.shelfLife||''}" placeholder="e.g. 7"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Adjusted By</label>
+      <select class="form-input" id="adj-staff"><option value="">Select...</option>${state.staff.map(s=>`<option value="${s.initials}">${s.name} (${s.initials})</option>`).join('')}</select>
+    </div>
+    <div style="display:flex;gap:10px;margin:14px 0">
+      <label style="flex:1;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" id="notifyOut-input" ${item.notifyOut?'checked':''}> Notify Stock Out</label>
+      <label style="flex:1;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" id="notifyLow-input" ${item.notifyLow?'checked':''}> Notify Low Stock</label>
+    </div>
+    <button class="btn btn-primary" onclick="saveItem('${id}')">Save Changes</button>
+    <button class="btn btn-danger btn-sm" onclick="deleteItem('${id}')" style="width:100%;margin-top:8px">Delete Item</button>
+  `;openModal();
+}
+function adjQ(d){const inp=document.getElementById('qty-input');let v=parseFloat(inp.value)+d;if(v<0)v=0;inp.value=v;}
+function saveItem(id){
+  const item=state.inventory.find(i=>i.id===id);if(!item)return;
+  const old=item.qty;item.qty=parseFloat(document.getElementById('qty-input').value)||0;
+  item.par=parseFloat(document.getElementById('par-input').value)||item.par;
+  item.sub=document.getElementById('sub-input').value||item.sub;
+  item.loc=document.getElementById('loc-input').value;
+  item.expDate=document.getElementById('exp-input').value||null;
+  const sl=parseFloat(document.getElementById('shelf-input').value);
+  if(sl>0){item.shelfLife=sl;if(!item.shelfLifeStart)item.shelfLifeStart=new Date().toISOString();}else{item.shelfLife=null;item.shelfLifeStart=null;}
+  item.notifyOut=document.getElementById('notifyOut-input').checked;
+  item.notifyLow=document.getElementById('notifyLow-input').checked;
+  const by=document.getElementById('adj-staff').value;
+  if(item.qty!==old)state.invHistory.push({item:item.name,itemId:item.id,from:old,to:item.qty,by:by||'—',at:new Date().toISOString(),unit:item.unit});
+  saveToDB();closeModal();renderPage(state.currentPage);toast('Updated '+item.name);
+}
+function deleteItem(id){if(!confirm('Delete this item?'))return;state.inventory=state.inventory.filter(i=>i.id!==id);saveToDB();closeModal();renderInventory();toast('Deleted');}
+
+function openAddItem(){
+  document.getElementById('modal-body').innerHTML=`
+    <div class="modal-title">Add Item</div>
+    <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="add-name" placeholder="Item name"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Location</label><select class="form-input" id="add-loc">${LOCATIONS.map(l=>`<option value="${l.id}">${l.icon} ${l.label}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Sub-group</label><input class="form-input" id="add-sub" placeholder="Cheeses, Meats..."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Quantity</label><input class="form-input" id="add-qty" type="number" value="0"></div>
+      <div class="form-group"><label class="form-label">Unit</label><input class="form-input" id="add-unit" placeholder="bags, lbs..."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Par Level</label><input class="form-input" id="add-par" type="number" value="3"></div>
+      <div class="form-group"><label class="form-label">Shelf Life (days)</label><input class="form-input" id="add-shelf" type="number" placeholder="Optional"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin:10px 0">
+      <label style="flex:1;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" id="add-notifyOut" checked> Notify Stock Out</label>
+      <label style="flex:1;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" id="add-notifyLow"> Notify Low Stock</label>
+    </div>
+    <button class="btn btn-primary" onclick="saveNewItem()">Add Item</button>
+  `;openModal();
+}
+function saveNewItem(){const n=document.getElementById('add-name').value.trim();if(!n){toast('Enter a name');return;}const sl=parseFloat(document.getElementById('add-shelf').value);state.inventory.push({id:'c_'+Date.now(),name:n,loc:document.getElementById('add-loc').value,sub:document.getElementById('add-sub').value||'Other',qty:parseFloat(document.getElementById('add-qty').value)||0,unit:document.getElementById('add-unit').value||'pcs',par:parseFloat(document.getElementById('add-par').value)||3,notifyOut:document.getElementById('add-notifyOut').checked,notifyLow:document.getElementById('add-notifyLow').checked,shelfLife:sl>0?sl:null,shelfLifeStart:sl>0?new Date().toISOString():null,expDate:null});saveToDB();closeModal();renderInventory();updateBadge();toast('Added '+n);}
+
+function openWasteLog(){document.getElementById('modal-body').innerHTML=`<div class="modal-title">Waste / Spoilage</div><div class="form-group"><label class="form-label">Item</label><select class="form-input" id="waste-item">${state.inventory.map(i=>`<option value="${i.id}">${i.name}</option>`).join('')}</select></div><div class="form-row"><div class="form-group"><label class="form-label">Qty</label><input class="form-input" id="waste-qty" type="number" value="1"></div><div class="form-group"><label class="form-label">Reason</label><select class="form-input" id="waste-reason"><option>Expired</option><option>Spoiled</option><option>Dropped</option><option>Over-prepped</option><option>Other</option></select></div></div><div class="form-group"><label class="form-label">By</label><select class="form-input" id="waste-by">${state.staff.map(s=>`<option value="${s.initials}">${s.name}</option>`).join('')}</select></div><button class="btn btn-primary" onclick="logWaste()" style="margin-bottom:16px">Log Waste</button><div style="font-weight:600;font-size:14px;margin-bottom:8px">Recent</div>${state.wasteLog.slice(-8).reverse().map(w=>`<div class="waste-entry"><div class="waste-item">${w.item} — ${w.qty} ${w.unit}</div><div class="waste-meta">${w.reason} · ${w.by} · ${new Date(w.at).toLocaleDateString()}</div></div>`).join('')||'<div class="empty-state"><p>No waste logged</p></div>'}`;openModal();}
+function logWaste(){const id=document.getElementById('waste-item').value;const item=state.inventory.find(i=>i.id===id);if(!item)return;const q=parseFloat(document.getElementById('waste-qty').value)||0;state.wasteLog.push({item:item.name,itemId:id,qty:q,unit:item.unit,reason:document.getElementById('waste-reason').value,by:document.getElementById('waste-by').value,at:new Date().toISOString()});item.qty=Math.max(0,item.qty-q);state.invHistory.push({item:item.name,itemId:item.id,from:item.qty+q,to:item.qty,by:document.getElementById('waste-by').value,at:new Date().toISOString(),unit:item.unit});saveToDB();toast('Waste logged');openWasteLog();}
+
+// ─── NOTIFICATIONS ───
+function renderNotify(){
+  const n=getNotifications();const c=document.getElementById('notify-content');
+  if(!n.length){c.innerHTML='<div class="empty-state"><p style="font-size:16px">✓ No alerts</p><p>Items with notifications enabled will appear here when stock is low, out, or nearing expiry.</p></div>';return;}
+  const groups={};n.forEach(a=>{if(!groups[a.type])groups[a.type]=[];groups[a.type].push(a);});
+  const labels={out:'🔴 Out of Stock',critical:'🟡 Critical Low',low:'🟡 Running Low',expired:'⚫ Expired',expiring:'🟠 Expiring Soon'};
+  const dotC={out:'gray',critical:'red',low:'yellow',expired:'gray',expiring:'orange'};
+  let html='';
+  Object.entries(labels).forEach(([type,label])=>{if(!groups[type])return;html+=`<div class="notify-section-title">${label} (${groups[type].length})</div>`;groups[type].forEach(a=>{html+=`<div class="notify-item" onclick="openItemDetail('${a.item.id}')"><div class="n-dot" style="background:var(--${dotC[type]})"></div><div class="n-info"><div class="n-name">${a.item.name}</div><div class="n-detail">${getLocIcon(a.item.loc)} ${getLocLabel(a.item.loc)} · ${a.msg}</div></div></div>`;});});
+  c.innerHTML=html;
+}
+
+// ─── TRACKING PAGE ───
+function renderTracking(){
+  const q=(document.getElementById('track-search')?.value||'').toLowerCase();
+  const items=state.inventory.filter(i=>i.name.toLowerCase().includes(q));
+  // Split into tracked (has data) and untracked
+  const tracked=[],untracked=[];
+  items.forEach(i=>{const r=calcUsageRate(i.id);if(r&&r.daysPerUnit!==null)tracked.push({item:i,rate:r});else untracked.push(i);});
+  tracked.sort((a,b)=>a.rate.daysPerUnit-b.rate.daysPerUnit); // fastest burning first
+
+  const list=document.getElementById('tracking-list');
+  let html='';
+  if(tracked.length){
+    html+=`<div class="subgroup-title">Items with usage data (${tracked.length})</div>`;
+    tracked.forEach(x=>{
+      const dl=getDaysLeft(x.item);
+      const dlClass=dl!==null&&dl<=3?'color:var(--red)':dl!==null&&dl<=5?'color:var(--yellow)':'';
+      html+=`<div class="tracking-card" onclick="openItemDetail('${x.item.id}')" style="cursor:pointer">
+        <div class="tc-name"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--${getStatus(x.item)});margin-right:6px"></span>${x.item.name}</div>
+        <div class="tc-row"><span>1 ${x.item.unit.replace(/s$/,'')} lasts</span><span class="tc-val">${x.rate.daysPerUnit} days</span></div>
+        <div class="tc-row"><span>Burn rate</span><span class="tc-val">${x.rate.unitsPerDay} ${x.item.unit}/day</span></div>
+        <div class="tc-row"><span>Current stock</span><span class="tc-val">${x.item.qty} ${x.item.unit}</span></div>
+        <div class="tc-row"><span>Est. days left</span><span class="tc-val" style="${dlClass}">${dl!==null?dl+' days':'—'}</span></div>
+        <div class="tc-row"><span>Data from</span><span class="tc-val">${x.rate.logCount} stock reductions over ${x.rate.daySpan}d</span></div>
+      </div>`;
+    });
+  }
+  if(untracked.length){
+    html+=`<div class="subgroup-title" style="margin-top:20px">Awaiting data (${untracked.length})</div>`;
+    html+=`<p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;padding-left:12px">These items need stock reductions logged to calculate usage rates.</p>`;
+    untracked.forEach(i=>{
+      html+=`<div class="inv-item" onclick="openItemDetail('${i.id}')"><div class="inv-status ${getStatus(i)}"></div><div class="inv-info"><div class="inv-name">${i.name}</div><div class="inv-meta">${getLocIcon(i.loc)} ${getLocLabel(i.loc)}</div></div><div class="inv-qty"><div class="inv-qty-num">${i.qty}</div><div class="inv-qty-unit">${i.unit}</div></div></div>`;
+    });
+  }
+  if(!html)html='<div class="empty-state"><p>No items found</p></div>';
+  list.innerHTML=html;
+}
+
+// ─── SETTINGS ───
+function renderSettings(){
+  document.getElementById('dark-toggle').className='toggle'+(state.settings.darkMode?' on':'');
+  document.getElementById('staff-list').innerHTML=state.staff.map((s,i)=>`<div class="staff-chip">${s.name} (${s.initials}) <span class="remove" onclick="removeStaff(${i})">×</span></div>`).join('');
+}
+function addStaff(){const n=document.getElementById('new-staff-name').value.trim(),i=document.getElementById('new-staff-init').value.trim().toUpperCase();if(!n||!i){toast('Enter name and initials');return;}state.staff.push({name:n,initials:i});document.getElementById('new-staff-name').value='';document.getElementById('new-staff-init').value='';saveToDB();renderSettings();toast('Added '+n);}
+function removeStaff(i){if(!confirm('Remove '+state.staff[i].name+'?'))return;state.staff.splice(i,1);saveToDB();renderSettings();}
+function toggleTheme(){state.settings.darkMode=!state.settings.darkMode;document.documentElement.setAttribute('data-theme',state.settings.darkMode?'dark':'light');saveToDB();if(state.currentPage==='settings')renderSettings();}
+function openModal(){document.getElementById('modal').classList.add('show');}
+function closeModal(){document.getElementById('modal').classList.remove('show');}
+function exportData(){const d=JSON.stringify(state,null,2);const b=new Blob([d],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`pinos-inventory-${today()}.json`;a.click();toast('Exported');}
+function exportCSV(){const rows=[['Name','Location','Sub-group','Qty','Unit','Par','Units/Day','Days/Unit','Days Left','Notify Out','Notify Low']];state.inventory.forEach(i=>{const r=calcUsageRate(i.id);const dl=getDaysLeft(i);rows.push([i.name,getLocLabel(i.loc),i.sub,i.qty,i.unit,i.par,r?r.unitsPerDay:'—',r&&r.daysPerUnit?r.daysPerUnit:'—',dl!==null?dl:'—',i.notifyOut?'Yes':'No',i.notifyLow?'Yes':'No']);});const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');const b=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`pinos-inventory-${today()}.csv`;a.click();toast('CSV exported');}
+function clearAllData(){if(!confirm('Erase ALL data?'))return;if(!confirm('Cannot be undone.'))return;state.inventory=DEFAULT_INVENTORY.map(i=>({...i}));state.wasteLog=[];state.invHistory=[];saveToDB();goTo('dash');toast('Data cleared');}
+
+async function init(){await openDB();await loadFromDB();if(state.inventory.length===0){state.inventory=DEFAULT_INVENTORY.map(i=>({...i}));saveToDB();}if(state.settings.darkMode)document.documentElement.setAttribute('data-theme','dark');
+// Migrate: ensure all history entries have itemId
+state.invHistory.forEach(h=>{if(!h.itemId){const it=state.inventory.find(i=>i.name===h.item);if(it)h.itemId=it.id;}});
+goTo('dash');}
+init();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
